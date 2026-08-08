@@ -1,105 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Web Desktop OS</title>
-    <link rel="icon" href="data:,">
-    
-    <!-- Load v86 engine -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My In-Browser Graphical OS</title>
+    <!-- Load the v86 Emulator Library -->
+    <script src="https://copy.sh/v86/build/libv86.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            min-height: 100vh;
-            background-color: #111111;
+        body {
+            background-color: #121212;
             color: #ffffff;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            font-family: monospace;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
         }
 
-        #status_bar {
-            margin-bottom: 12px;
-            font-size: 13px;
-            color: #00ff66;
-            text-align: center;
-            width: 800px;
-            max-width: 95%;
-            padding: 8px;
-            background: #1a1a1a;
-            border: 1px solid #333333;
-            border-radius: 4px;
+        h1 {
+            margin-bottom: 5px;
         }
 
-        #screen_wrapper {
-            background-color: #000000;
-            border: 2px solid #333333;
-            padding: 4px;
+        p {
+            color: #aaa;
+            margin-bottom: 20px;
         }
 
+        /* Screen container for the VGA canvas */
         #screen_container {
-            width: 800px;
-            height: 600px;
-            background-color: #000000;
-            position: relative;
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 0px 8px 20px rgba(0,0,0,0.7);
+            background-color: #000;
             overflow: hidden;
         }
 
-        #screen_container canvas {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain;
-            image-rendering: pixelated;
+        canvas {
+            display: block;
         }
     </style>
 </head>
 <body>
 
-    <div id="status_bar">Loading Graphical Desktop Environment...</div>
+    <h1>WebAssembly Desktop OS</h1>
+    <p>Click inside the window to control the mouse and keyboard.</p>
 
-    <div id="screen_wrapper">
-        <div id="screen_container"></div>
+    <!-- The emulator screen element -->
+    <div id="screen_container">
+        <div style="white-space: pre; font-family: monospace;"></div>
+        <canvas></canvas>
     </div>
 
     <script>
-        const statusBar = document.getElementById("status_bar");
-
-        function logStatus(msg, isError = false) {
-            statusBar.style.color = isError ? "#ff4444" : "#00ff66";
-            statusBar.textContent = msg;
-        }
-
         window.onload = function() {
-            var V86Class = window.V86Starter || window.V86;
-            if (!V86Class) {
-                logStatus("Error: Could not load v86 library.", true);
-                return;
-            }
-
-            logStatus("Booting KolibriOS Desktop...");
-
-            var emulator = window.emulator = new V86Class({
-                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                memory_size: 128 * 1024 * 1024,
-                vga_memory_size: 8 * 1024 * 1024,
+            // Initialize the v86 WebAssembly emulator
+            var emulator = new V86Starter({
+                wasm_path: "https://copy.sh/v86/build/v86.wasm",
+                memory_size: 128 * 1024 * 1024,     // 128 MB RAM
+                vga_memory_size: 8 * 1024 * 1024,   // 8 MB VRAM
                 screen_container: document.getElementById("screen_container"),
-                bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin" },
-                vga_bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin" },
-                fda: { url: "https://cdn.jsdelivr.net/gh/copy/images@master/kolibri.img" },
-                autostart: true
-            });
-
-            emulator.add_listener("emulator-ready", function() {
-                logStatus("OS Booted! Click inside the screen to capture the mouse.");
+                bios: {
+                    url: "https://copy.sh/v86/bios/seabios.bin",
+                },
+                vga_bios: {
+                    url: "https://copy.sh/v86/bios/vgabios.bin",
+                },
+                // Graphical OS disk image (KolibriOS GUI used for demo)
+                fda: {
+                    url: "https://copy.sh/v86/images/kolibri.img",
+                },
+                autostart: true,
             });
         };
     </script>
