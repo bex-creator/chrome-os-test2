@@ -6,7 +6,7 @@
     <!-- Prevent 404 favicon warning -->
     <link rel="icon" href="data:,">
     
-    <!-- Load libv86 from official NPM CDN release -->
+    <!-- CDN with full CORS support for v86 runtime -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -73,6 +73,10 @@
                 return;
             }
 
+            function getAbsUrl(filename) {
+                return new URL(filename, location.href).href;
+            }
+
             var emulator = window.emulator = new V86Class({
                 wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
                 memory_size: 64 * 1024 * 1024,
@@ -80,7 +84,8 @@
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
                 vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
-                cdrom: { url: "https://copy.sh/v86/images/linux4.iso" },
+                // Same-origin path to avoid CORS block
+                cdrom: { url: getAbsUrl("linux4.iso") },
                 autostart: true
             });
         };
