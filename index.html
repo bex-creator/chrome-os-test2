@@ -5,8 +5,8 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Matched v86 Library Bundle from CDN -->
-    <script src="https://cdn.jsdelivr.net/gh/copy/v86@master/build/libv86.js"></script>
+    <!-- Load libv86.js directly from your GitHub repository root -->
+    <script src="libv86.js"></script>
 
     <style>
         * {
@@ -67,12 +67,11 @@
         #terminal {
             width: 648px;
             max-width: 90%;
-            height: 250px;
+            height: 220px;
             background-color: #000000;
             color: #00ff66;
             font-family: monospace;
-            font-size: 13px;
-            line-height: 16px;
+            font-size: 12px;
             white-space: pre-wrap;
             word-break: break-all;
             overflow-y: auto;
@@ -84,14 +83,14 @@
 </head>
 <body>
 
-    <div id="status_bar">Initializing Linux VM...</div>
+    <div id="status_bar">Loading repository files...</div>
 
-    <!-- VGA Display Container -->
+    <!-- Graphical VGA Container -->
     <div id="screen_wrapper">
         <div id="screen_container"></div>
     </div>
 
-    <!-- Serial Terminal Container -->
+    <!-- Terminal Output -->
     <div id="terminal"></div>
 
     <script>
@@ -102,23 +101,18 @@
             statusBar.textContent = msg;
         }
 
-        // Catch runtime errors and output to status bar
-        window.onerror = function(msg) {
-            logStatus("Script Error: " + msg, true);
-        };
-
-        // Fetch binary files into memory and verify they aren't Git LFS text pointers
-        async function fetchVerifiedBinary(url) {
-            logStatus("Downloading " + url.split("/").pop() + "...");
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("HTTP " + res.status + " fetching " + url);
+        // Fetch local binary files and verify they aren't Git LFS text pointers
+        async function fetchLocalBinary(file) {
+            logStatus("Fetching " + file + " from GitHub repository...");
+            const res = await fetch(file);
+            if (!res.ok) throw new Error("File missing: " + file + " (HTTP " + res.status + ")");
             const buf = await res.arrayBuffer();
 
-            // Detect if a file is an LFS text pointer instead of a real binary
-            if (buf.byteLength < 1000) {
+            // Check if GitHub turned the binary into a 100-byte Git LFS pointer text file
+            if (buf.byteLength < 500) {
                 const text = new TextDecoder().decode(buf);
                 if (text.includes("git-lfs")) {
-                    throw new Error(url + " is a Git LFS text pointer, not a valid binary file.");
+                    throw new Error(file + " is a Git LFS text pointer! Re-upload the real raw file to GitHub.");
                 }
             }
             return buf;
@@ -127,39 +121,38 @@
         window.onload = async function() {
             var V86Class = window.V86Starter || window.V86;
             if (!V86Class) {
-                logStatus("Error: v86 library failed to load from CDN. Check adblockers/network.", true);
+                logStatus("Error: libv86.js missing or corrupt in repository root.", true);
                 return;
             }
 
             try {
-                // Pre-fetch working BIOS and Linux Kernel binaries directly from CDN into RAM
-                const [biosBuf, vgaBiosBuf, kernelBuf] = await Promise.all([
-                    fetchVerifiedBinary("https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin"),
-                    fetchVerifiedBinary("https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin"),
-                    fetchVerifiedBinary("https://k.copy.sh/buildroot-bzimage.bin")
+                // Fetch all files locally into RAM to bypass GitHub Pages Range-Request blocking
+                const [biosBuf, vgaBiosBuf, isoBuf] = await Promise.all([
+                    fetchLocalBinary("seabios.bin"),
+                    fetchLocalBinary("vgabios.bin"),
+                    fetchLocalBinary("linux4.iso")
                 ]);
 
-                logStatus("Booting Linux Kernel via WASM...");
+                logStatus("Launching WebAssembly VM...");
 
                 var emulator = window.emulator = new V86Class({
-                    wasm_path: "https://cdn.jsdelivr.net/gh/copy/v86@master/build/v86.wasm",
-                    memory_size: 128 * 1024 * 1024,
+                    wasm_path: "v86.wasm",
+                    memory_size: 256 * 1024 * 1024,
                     vga_memory_size: 8 * 1024 * 1024,
                     screen_container: document.getElementById("screen_container"),
                     serial_container: document.getElementById("terminal"),
                     bios: { buffer: biosBuf },
                     vga_bios: { buffer: vgaBiosBuf },
-                    bzimage: { buffer: kernelBuf },
-                    cmdline: "console=ttyS0 quiet",
+                    cdrom: { buffer: isoBuf },
                     autostart: true
                 });
 
                 emulator.add_listener("emulator-ready", function() {
-                    logStatus("Linux Booted Successfully! Type commands in the terminal below.");
+                    logStatus("VM active. Booting Linux into terminal below...");
                 });
 
             } catch (err) {
-                logStatus("Boot Failure: " + err.message, true);
+                logStatus("GitHub Pages Boot Error: " + err.message, true);
             }
         };
     </script>
