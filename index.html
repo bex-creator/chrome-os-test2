@@ -5,7 +5,6 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load v86 runtime from jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -39,25 +38,36 @@
             background-color: #000000;
             border: 2px solid #333333;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            padding: 8px;
-            display: inline-block;
+            padding: 4px;
         }
 
-        /* Allow v86 to manage internal container scaling */
+        /* Fixed 640x400 dimensions prevent screen collapses during text/VGA mode switches */
         #screen_container {
+            width: 640px;
+            height: 400px;
             background-color: #000000;
+            position: relative;
+            overflow: hidden;
         }
 
+        /* Text Mode element styling */
         #screen_container > div {
+            width: 100%;
+            height: 100%;
             white-space: pre;
             font-family: monospace;
             font-size: 14px;
             line-height: 14px;
             color: #ffffff;
             background-color: #000000;
+            overflow: hidden;
         }
 
+        /* VGA Graphics Canvas element styling */
         #screen_container > canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -96,7 +106,7 @@
                 const response = await fetch(isoUrl, { method: "HEAD" });
                 if (!response.ok) {
                     statusBar.style.color = "#ff4444";
-                    statusBar.textContent = "Error: linux4.iso not found (404). Ensure linux4.iso is in the repository root.";
+                    statusBar.textContent = "Error: linux4.iso not found (404). Upload linux4.iso to repository root.";
                     return;
                 }
             } catch (err) {
@@ -105,12 +115,12 @@
                 return;
             }
 
-            statusBar.textContent = "Booting SeaBIOS and Linux Kernel...";
+            statusBar.textContent = "Booting SeaBIOS... (Kernel decompression takes ~20s)";
 
             var emulator = window.emulator = new V86Class({
                 wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                memory_size: 512 * 1024 * 1024,     // 512 MB system RAM
-                vga_memory_size: 8 * 1024 * 1024, // 8 MB VGA VRAM
+                memory_size: 512 * 1024 * 1024,
+                vga_memory_size: 8 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
                 vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
@@ -119,7 +129,7 @@
             });
 
             emulator.add_listener("emulator-ready", function() {
-                statusBar.textContent = "Emulator Running - SeaBIOS Output Below";
+                statusBar.textContent = "Kernel Loading - Output will render shortly...";
             });
         };
     </script>
