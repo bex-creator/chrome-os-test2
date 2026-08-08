@@ -1,40 +1,45 @@
 <!DOCTYPE html>
-<html style="height: 100%; margin: 0; background: #000;">
+<html style="height: 100%; margin: 0; background-color: #000;">
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-
-    <!-- Attempt to load local libv86.js, fallback to CDN if missing or invalid -->
-    <script src="libv86.js"></script>
-    <script>
-        if (typeof V86 === "undefined" && typeof V86Starter === "undefined") {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"><\/script>');
+    <style>
+        /* Forces text-mode terminal output to render white text on black background */
+        #screen_container {
+            white-space: pre;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 14px;
+            background-color: #000000;
+            color: #ffffff; /* Prevents text from being invisible */
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
         }
-    </script>
+    </style>
+    <script src="libv86.js"></script>
 </head>
-<body style="height: 100%; margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden;">
+<body style="height: 100%; margin: 0; background: #000; overflow: hidden;">
 
-    <!-- Screen container required by v86 -->
-    <div id="screen_container" style="width: 100%; height: 100vh;">
+    <!-- Required dual DOM layout for v86 (div for text mode, canvas for VGA mode) -->
+    <div id="screen_container">
         <div style="white-space: pre; font-family: monospace;"></div>
-        <canvas></canvas>
+        <canvas style="display: none;"></canvas>
     </div>
 
     <script>
         window.onload = function() {
-            // Determine active V86 constructor class name
             var V86Constructor = window.V86 || window.V86Starter;
 
             if (!V86Constructor) {
-                alert("Failed to load v86 engine. Check internet connection or repository files.");
+                alert("V86 engine failed to attach to window.");
                 return;
             }
 
-            // Initialize emulator
             var emulator = window.emulator = new V86Constructor({
                 wasm_path: "v86.wasm",
-                memory_size: 64 * 1024 * 1024,
-                vga_memory_size: 2 * 1024 * 1024,
+                memory_size: 128 * 1024 * 1024,      // 128 MB RAM for OS boot
+                vga_memory_size: 8 * 1024 * 1024,    // 8 MB VGA RAM
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "seabios.bin" },
                 vga_bios: { url: "vgabios.bin" },
