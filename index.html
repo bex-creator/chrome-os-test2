@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load local libv86.js from repository -->
-    <script src="libv86.js"></script>
+    <!-- Load v86 library from jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
         * {
@@ -35,6 +35,10 @@
             text-align: center;
             max-width: 640px;
             word-break: break-all;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 4px;
         }
 
         #screen_wrapper {
@@ -52,7 +56,14 @@
             overflow: hidden;
         }
 
-        #screen_container > div {
+        #screen_container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        #screen_container div {
             white-space: pre;
             font-family: monospace;
             font-size: 14px;
@@ -60,53 +71,106 @@
             color: #ffffff;
             background-color: #000000;
         }
-
-        #screen_container canvas {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain;
-            image-rendering: pixelated;
-        }
     </style>
 </head>
 <body>
 
-    <div id="status_bar">Initializing emulator environment...</div>
+    <div id="status_bar">Initializing diagnostic environment...</div>
 
     <div id="screen_wrapper">
-        <div id="screen_container">
-            <div></div>
-            <canvas></canvas>
-        </div>
+        <div id="screen_container"></div>
     </div>
 
     <script>
-        window.onload = function() {
-            var statusBar = document.getElementById("status_bar");
-            var V86Class = window.V86Starter || window.V86;
+        const statusBar = document.getElementById("status_bar");
 
-            if (!V86Class) {
-                statusBar.style.color = "#ff4444";
-                statusBar.textContent = "Error: libv86.js failed to load.";
+        function logStatus(msg, isError = false) {
+            statusBar.style.color = isError ? "#ff4444" : "#00ff66";
+            statusBar.textContent = msg;
+            if (isError) console.error(msg);
+        }
+
+        // Catch and display runtime JavaScript errors directly in the UI
+        window.onerror = function(msg, url, line) {
+            logStatus("JS Error: " + msg + " (Line " + line + ")", true);
+        };
+        window.onunhandledrejection = function(e) {
+            logStatus("Promise Rejection: " + (e.reason ? (e.reason.message || e.reason) : e), true);
+        };
+
+        // Pre-fetch files into memory and verify file size to detect corrupt/LFS files
+        async function fetchBinary(primaryUrl, fallbackUrl, minBytes = 1000) {
+            logStatus("Loading " + primaryUrl + "...");
+            try {
+                let res = await fetch(primaryUrl);
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                let buf = await res.arrayBuffer();
+                if (buf.byteLength < minBytes) {
+                    throw new Error("File too small (" + buf.byteLength + " B). Likely a Git LFS pointer.");
+                }
+                return buf;
+            } catch (err) {
+                if (fallbackUrl) {
+                    logStatus(primaryUrl + " failed (" + err.message + "). Fetching CDN fallback...");
+                    let res = await fetch(fallbackUrl);
+                    if (!res.ok) throw new Error("CDN fallback failed HTTP " + res.status);
+                    return await res.arrayBuffer();
+                }
+                throw err;
+            }
+        }
+
+        window.onload = async function() {
+            if (window.location.protocol === "file:") {
+                logStatus("Error: v86 cannot run via file:// protocol. View this page via GitHub Pages or a web server.", true);
                 return;
             }
 
-            statusBar.textContent = "Loading Linux ISO and BIOS binaries...";
+            var V86Class = window.V86Starter || window.V86;
+            if (!V86Class) {
+                logStatus("Error: v86 runtime failed to load from CDN.", true);
+                return;
+            }
 
-            var emulator = window.emulator = new V86Class({
-                wasm_path: "v86.wasm",
-                memory_size: 256 * 1024 * 1024,
-                vga_memory_size: 8 * 1024 * 1024,
-                screen_container: document.getElementById("screen_container"),
-                bios: { url: "seabios.bin" },
-                vga_bios: { url: "vgabios.bin" },
-                cdrom: { url: "linux4.iso" },
-                autostart: true
-            });
+            try {
+                const biosBuf = await fetchBinary(
+                    "seabios.bin", 
+                    "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin", 
+                    10000
+                );
+                
+                const vgaBiosBuf = await fetchBinary(
+                    "vgabios.bin", 
+                    "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin", 
+                    10000
+                );
+                
+                const isoBuf = await fetchBinary(
+                    "linux4.iso", 
+                    "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso", 
+                    1000000
+                );
 
-            emulator.add_listener("emulator-ready", function() {
-                statusBar.textContent = "Emulator active. Booting Linux...";
-            });
+                logStatus("Initializing WebAssembly Virtual Machine...");
+
+                var emulator = window.emulator = new V86Class({
+                    wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
+                    memory_size: 64 * 1024 * 1024,
+                    vga_memory_size: 8 * 1024 * 1024,
+                    screen_container: document.getElementById("screen_container"),
+                    bios: { buffer: biosBuf },
+                    vga_bios: { buffer: vgaBiosBuf },
+                    cdrom: { buffer: isoBuf },
+                    autostart: true
+                });
+
+                emulator.add_listener("emulator-ready", function() {
+                    logStatus("Emulator active. Linux is booting below...");
+                });
+
+            } catch (err) {
+                logStatus("Boot Failure: " + err.message, true);
+            }
         };
     </script>
 </body>
