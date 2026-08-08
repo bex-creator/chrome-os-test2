@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebAssembly Desktop OS</title>
-    <!-- Load v86 library via CORS-friendly jsDelivr CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
+    <!-- Load the local script you uploaded -->
+    <script src="libv86.js"></script>
     <style>
         body {
             background-color: #121212;
@@ -53,20 +53,21 @@
 
     <script>
         window.onload = function() {
-            var emulator = new V86Starter({
-                // Using jsDelivr CDN links to bypass CORS blocks
-                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                memory_size: 128 * 1024 * 1024,     // 128 MB RAM
-                vga_memory_size: 8 * 1024 * 1024,   // 8 MB VRAM
+            // Using window.V86 (the standard command for newer v86 versions)
+            var emulator = new window.V86({
+                // Pointing directly to the files in your GitHub repo
+                wasm_path: "v86.wasm",
+                memory_size: 128 * 1024 * 1024,     
+                vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
-                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin",
+                    url: "seabios.bin",
                 },
                 vga_bios: {
-                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin",
+                    url: "vgabios.bin",
                 },
                 fda: {
-                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/images/kolibri.img",
+                    url: "kolibri.img",
                 },
                 autostart: true,
             });
