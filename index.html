@@ -38,13 +38,15 @@
 
         canvas {
             display: block;
+            /* Hides the real cursor when hovering over the screen */
+            cursor: none; 
         }
     </style>
 </head>
 <body>
 
     <h1>WebAssembly Desktop OS</h1>
-    <p>Click inside the window to control the mouse and keyboard.</p>
+    <p>Click inside the window to lock the mouse. Press <b>Esc</b> to release it.</p>
 
     <div id="screen_container">
         <div style="white-space: pre; font-family: monospace;"></div>
@@ -53,9 +55,8 @@
 
     <script>
         window.onload = function() {
-            // Using window.V86 (the standard command for newer v86 versions)
+            // Initialize the emulator using your local files
             var emulator = new window.V86({
-                // Pointing directly to the files in your GitHub repo
                 wasm_path: "v86.wasm",
                 memory_size: 128 * 1024 * 1024,     
                 vga_memory_size: 8 * 1024 * 1024,   
@@ -70,6 +71,15 @@
                     url: "kolibri.img",
                 },
                 autostart: true,
+            });
+
+            // Lock the mouse to the canvas when clicked to fix the double cursor
+            var canvas = document.querySelector("canvas");
+            canvas.addEventListener("click", async function() {
+                // Only request lock if it isn't already locked
+                if (document.pointerLockElement !== canvas) {
+                    await canvas.requestPointerLock();
+                }
             });
         };
     </script>
