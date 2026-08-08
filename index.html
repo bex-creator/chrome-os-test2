@@ -3,11 +3,18 @@
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-    <!-- Loads libv86 script from CDN to define V86Starter globally -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
+
+    <!-- Attempt to load local libv86.js, fallback to CDN if missing or invalid -->
+    <script src="libv86.js"></script>
+    <script>
+        if (typeof V86 === "undefined" && typeof V86Starter === "undefined") {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"><\/script>');
+        }
+    </script>
 </head>
 <body style="height: 100%; margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden;">
 
+    <!-- Screen container required by v86 -->
     <div id="screen_container" style="width: 100%; height: 100vh;">
         <div style="white-space: pre; font-family: monospace;"></div>
         <canvas></canvas>
@@ -15,8 +22,17 @@
 
     <script>
         window.onload = function() {
-            var emulator = new V86Starter({
-                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
+            // Determine active V86 constructor class name
+            var V86Constructor = window.V86 || window.V86Starter;
+
+            if (!V86Constructor) {
+                alert("Failed to load v86 engine. Check internet connection or repository files.");
+                return;
+            }
+
+            // Initialize emulator
+            var emulator = window.emulator = new V86Constructor({
+                wasm_path: "v86.wasm",
                 memory_size: 64 * 1024 * 1024,
                 vga_memory_size: 2 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
