@@ -58,7 +58,7 @@
             // Initialize the emulator using your local files
             var emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 128 * 1024 * 1024,     
+                memory_size: 512 * 1024 * 1024,     // Increased RAM to 512MB for ReactOS
                 vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
@@ -67,8 +67,9 @@
                 vga_bios: {
                     url: "vgabios.bin",
                 },
-                fda: {
-                    url: "kolibri.img",
+                // Swapped from fda (floppy) to hda (hard drive) for ReactOS
+                hda: {
+                    url: "reactos.img",
                 },
                 autostart: true,
             });
