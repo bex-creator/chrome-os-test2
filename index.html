@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html style="height: 100%; margin: 0; background: #000;">
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-
-    <!-- Suppresses the 404 favicon console error -->
+    <!-- Prevent 404 favicon logs -->
     <link rel="icon" href="data:,">
-
+    
     <script src="libv86.js"></script>
 
     <style>
@@ -16,44 +15,28 @@
             margin: 0;
             padding: 0;
             background-color: #000000;
-            color: #ffffff;
             overflow: hidden;
-            font-family: monospace;
         }
 
-        /* Enforce full-screen container dimensions */
         #screen_container {
             width: 100vw;
             height: 100vh;
             background-color: #000000;
-            display: block;
         }
 
-        /* Text-mode terminal output */
+        /* Set text mode styling without breaking display visibility toggles */
         #screen_container div {
-            white-space: pre;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 14px;
-            color: #ffffff;
-            background-color: #000000;
-        }
-
-        /* Graphical VGA mode output */
-        #screen_container canvas {
-            display: block !important;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain;
+            color: #ffffff !important;
+            background-color: #000000 !important;
         }
     </style>
 </head>
 <body>
 
-    <!-- Target container for v86 screen adapter -->
+    <!-- Standard ScreenAdapter layout required by v86 -->
     <div id="screen_container">
-        <div style="white-space: pre; font-family: monospace;"></div>
-        <canvas></canvas>
+        <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+        <canvas style="display: none"></canvas>
     </div>
 
     <script>
@@ -65,7 +48,6 @@
                 return;
             }
 
-            // Generate absolute URLs for worker thread compatibility
             function getAbsUrl(filename) {
                 return new URL(filename, location.href).href;
             }
