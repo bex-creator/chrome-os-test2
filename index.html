@@ -1,52 +1,81 @@
 <!DOCTYPE html>
-<html style="height: 100%; margin: 0; background-color: #000;">
+<html>
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
+    <!-- Load v86 directly from jsDelivr CDN to guarantee library integrity -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
     <style>
-        /* Forces text-mode terminal output to render white text on black background */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            overflow: hidden;
+            font-family: monospace;
+        }
         #screen_container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #screen_container div {
             white-space: pre;
             font-family: monospace;
             font-size: 14px;
             line-height: 14px;
+            color: #ffffff;
             background-color: #000000;
-            color: #ffffff; /* Prevents text from being invisible */
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
+        }
+        #screen_container canvas {
+            display: none;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #debug_out {
+            color: #ff5555;
+            padding: 20px;
+            white-space: pre-wrap;
         }
     </style>
-    <script src="libv86.js"></script>
 </head>
-<body style="height: 100%; margin: 0; background: #000; overflow: hidden;">
+<body>
 
-    <!-- Required dual DOM layout for v86 (div for text mode, canvas for VGA mode) -->
+    <div id="debug_out"></div>
+
+    <!-- Exact DOM structure required by v86 screen adapter:
+         Child 0: <div> (Text mode)
+         Child 1: <canvas> (VGA mode) -->
     <div id="screen_container">
-        <div style="white-space: pre; font-family: monospace;"></div>
-        <canvas style="display: none;"></canvas>
+        <div></div>
+        <canvas></canvas>
     </div>
 
     <script>
-        window.onload = function() {
-            var V86Constructor = window.V86 || window.V86Starter;
+        window.addEventListener("DOMContentLoaded", function() {
+            try {
+                var V86Constructor = window.V86 || window.V86Starter;
 
-            if (!V86Constructor) {
-                alert("V86 engine failed to attach to window.");
-                return;
+                if (!V86Constructor) {
+                    throw new Error("V86 constructor class not found.");
+                }
+
+                var emulator = window.emulator = new V86Constructor({
+                    wasm_path: "v86.wasm",
+                    memory_size: 64 * 1024 * 1024,
+                    vga_memory_size: 2 * 1024 * 1024,
+                    screen_container: document.getElementById("screen_container"),
+                    bios: { url: "seabios.bin" },
+                    vga_bios: { url: "vgabios.bin" },
+                    cdrom: { url: "linux4.iso" },
+                    autostart: true
+                });
+            } catch (err) {
+                document.getElementById("debug_out").innerText = "Execution Error: " + err.stack;
             }
-
-            var emulator = window.emulator = new V86Constructor({
-                wasm_path: "v86.wasm",
-                memory_size: 128 * 1024 * 1024,      // 128 MB RAM for OS boot
-                vga_memory_size: 8 * 1024 * 1024,    // 8 MB VGA RAM
-                screen_container: document.getElementById("screen_container"),
-                bios: { url: "seabios.bin" },
-                vga_bios: { url: "vgabios.bin" },
-                cdrom: { url: "linux4.iso" },
-                autostart: true
-            });
-        };
+        });
     </script>
 </body>
 </html>
