@@ -5,7 +5,7 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load v86 runtime from jsDelivr -->
+    <!-- Load v86 runtime from jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -25,10 +25,9 @@
             justify-content: center;
             align-items: center;
             font-family: monospace;
-            overflow: hidden;
+            overflow: auto;
         }
 
-        /* Status header */
         #status_bar {
             margin-bottom: 12px;
             font-size: 14px;
@@ -36,21 +35,17 @@
             text-align: center;
         }
 
-        /* Screen Wrapper */
         #screen_wrapper {
             background-color: #000000;
             border: 2px solid #333333;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            padding: 4px;
+            padding: 8px;
+            display: inline-block;
         }
 
-        /* v86 target container - Keep standard block layout for v86 internal scaling */
+        /* Allow v86 to manage internal container scaling */
         #screen_container {
-            width: 640px;
-            height: 400px;
             background-color: #000000;
-            position: relative;
-            overflow: hidden;
         }
 
         #screen_container > div {
@@ -63,8 +58,6 @@
         }
 
         #screen_container > canvas {
-            width: 100%;
-            height: 100%;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -88,7 +81,7 @@
 
             if (!V86Class) {
                 statusBar.style.color = "#ff4444";
-                statusBar.textContent = "Error: libv86.js failed to load from CDN.";
+                statusBar.textContent = "Error: libv86.js failed to load.";
                 return;
             }
 
@@ -98,27 +91,26 @@
 
             const isoUrl = getAbsUrl("linux4.iso");
 
-            // Verify linux4.iso actually exists on GitHub Pages before booting
             statusBar.textContent = "Checking for linux4.iso...";
             try {
                 const response = await fetch(isoUrl, { method: "HEAD" });
                 if (!response.ok) {
                     statusBar.style.color = "#ff4444";
-                    statusBar.textContent = "Error: linux4.iso not found (404). Upload linux4.iso to your GitHub repo root.";
+                    statusBar.textContent = "Error: linux4.iso not found (404). Ensure linux4.iso is in the repository root.";
                     return;
                 }
             } catch (err) {
                 statusBar.style.color = "#ff4444";
-                statusBar.textContent = "Error verifying linux4.iso location.";
+                statusBar.textContent = "Error checking linux4.iso location.";
                 return;
             }
 
-            statusBar.textContent = "Loading WebAssembly CPU & Linux ISO...";
+            statusBar.textContent = "Booting SeaBIOS and Linux Kernel...";
 
             var emulator = window.emulator = new V86Class({
                 wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                memory_size: 64 * 1024 * 1024,
-                vga_memory_size: 2 * 1024 * 1024,
+                memory_size: 512 * 1024 * 1024,     // 512 MB system RAM
+                vga_memory_size: 8 * 1024 * 1024, // 8 MB VGA VRAM
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
                 vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
@@ -127,7 +119,7 @@
             });
 
             emulator.add_listener("emulator-ready", function() {
-                statusBar.textContent = "Emulator Running - Booting Linux...";
+                statusBar.textContent = "Emulator Running - SeaBIOS Output Below";
             });
         };
     </script>
