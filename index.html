@@ -3,55 +3,67 @@
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-    <!-- Prevent 404 favicon log -->
+    <!-- Prevent 404 favicon warning -->
     <link rel="icon" href="data:,">
-    
     <script src="libv86.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
-            background-color: #111111;
-            color: #ffffff;
             width: 100vw;
             height: 100vh;
+            background-color: #111111;
+            color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: monospace;
             overflow: hidden;
+            font-family: monospace;
         }
 
+        /* Centered emulator view container */
         #screen_container {
             background-color: #000000;
             border: 2px solid #333333;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            padding: 12px;
-            display: inline-block;
+            min-width: 640px;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
 
-        /* Force all child spans and text nodes inside v86 container to render white text */
-        #screen_container div,
-        #screen_container div * {
-            white-space: pre !important;
-            font-family: monospace !important;
-            font-size: 16px !important;
-            line-height: 16px !important;
-            color: #ffffff !important;
-            background-color: #000000 !important;
+        /* v86 Text Mode styling */
+        #screen_container > div {
+            white-space: pre;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 14px;
+            color: #ffffff;
+            background-color: #000000;
         }
 
-        #screen_container canvas {
-            display: none;
+        /* v86 VGA Graphics Mode canvas scaling */
+        #screen_container > canvas {
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
     </style>
 </head>
 <body>
 
+    <!-- Minimal DOM structure required by v86 ScreenAdapter -->
     <div id="screen_container">
-        <div style="white-space: pre; font: 16px monospace; line-height: 16px;"></div>
-        <canvas style="display: none;"></canvas>
+        <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+        <canvas style="display: none"></canvas>
     </div>
 
     <script>
