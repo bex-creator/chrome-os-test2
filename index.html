@@ -5,7 +5,7 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load v86 directly from npm CDN -->
+    <!-- Load v86 library bundle -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -83,7 +83,7 @@
 </head>
 <body>
 
-    <div id="status_bar">Downloading Linux kernel into memory...</div>
+    <div id="status_bar">Initializing Linux VM...</div>
 
     <div id="screen_wrapper">
         <div id="screen_container"></div>
@@ -103,50 +103,35 @@
             logStatus("Error: " + msg, true);
         };
 
-        window.onload = async function() {
+        window.onload = function() {
             var V86Class = window.V86Starter || window.V86;
             if (!V86Class) {
-                logStatus("Error: Could not load v86 library. Please disable adblockers on this page.", true);
+                logStatus("Error: Could not load v86 library from CDN.", true);
                 return;
             }
 
             try {
-                // Fetch working official binaries into RAM
-                const [biosRes, vgaRes, kernelRes] = await Promise.all([
-                    fetch("https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin"),
-                    fetch("https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin"),
-                    fetch("https://cdn.jsdelivr.net/gh/copy/v86@master/images/buildroot-bzimage.bin")
-                ]);
-
-                if (!biosRes.ok || !vgaRes.ok || !kernelRes.ok) {
-                    throw new Error("Failed to fetch boot binaries from network.");
-                }
-
-                const biosBuf = await biosRes.arrayBuffer();
-                const vgaBiosBuf = await vgaRes.arrayBuffer();
-                const kernelBuf = await kernelRes.arrayBuffer();
-
-                logStatus("Booting Linux OS...");
+                logStatus("Downloading binaries & booting Linux...");
 
                 var emulator = window.emulator = new V86Class({
                     wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                    memory_size: 128 * 1024 * 1024,
-                    vga_memory_size: 8 * 1024 * 1024,
+                    memory_size: 64 * 1024 * 1024,
+                    vga_memory_size: 2 * 1024 * 1024,
                     screen_container: document.getElementById("screen_container"),
                     serial_container: document.getElementById("terminal"),
-                    bios: { buffer: biosBuf },
-                    vga_bios: { buffer: vgaBiosBuf },
-                    bzimage: { buffer: kernelBuf },
+                    bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin" },
+                    vga_bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin" },
+                    bzimage: { url: "https://k.copy.sh/buildroot-bzimage.bin" },
                     cmdline: "console=ttyS0 quiet",
                     autostart: true
                 });
 
                 emulator.add_listener("emulator-ready", function() {
-                    logStatus("Linux Ready! Terminal active below.");
+                    logStatus("Linux booted! Terminal active below.");
                 });
 
             } catch (err) {
-                logStatus("Boot Error: " + err.message, true);
+                logStatus("Boot Failure: " + err.message, true);
             }
         };
     </script>
