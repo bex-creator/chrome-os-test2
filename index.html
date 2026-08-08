@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My In-Browser Graphical OS</title>
-    <!-- Load the v86 Emulator Library -->
-    <script src="https://copy.sh/v86/build/libv86.js"></script>
+    <title>WebAssembly Desktop OS</title>
+    <!-- Load v86 library via CORS-friendly jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
     <style>
         body {
             background-color: #121212;
@@ -28,7 +28,6 @@
             margin-bottom: 20px;
         }
 
-        /* Screen container for the VGA canvas */
         #screen_container {
             border: 3px solid #333;
             border-radius: 8px;
@@ -47,7 +46,6 @@
     <h1>WebAssembly Desktop OS</h1>
     <p>Click inside the window to control the mouse and keyboard.</p>
 
-    <!-- The emulator screen element -->
     <div id="screen_container">
         <div style="white-space: pre; font-family: monospace;"></div>
         <canvas></canvas>
@@ -55,21 +53,20 @@
 
     <script>
         window.onload = function() {
-            // Initialize the v86 WebAssembly emulator
             var emulator = new V86Starter({
-                wasm_path: "https://copy.sh/v86/build/v86.wasm",
+                // Using jsDelivr CDN links to bypass CORS blocks
+                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
                 memory_size: 128 * 1024 * 1024,     // 128 MB RAM
                 vga_memory_size: 8 * 1024 * 1024,   // 8 MB VRAM
                 screen_container: document.getElementById("screen_container"),
                 bios: {
-                    url: "https://copy.sh/v86/bios/seabios.bin",
+                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin",
                 },
                 vga_bios: {
-                    url: "https://copy.sh/v86/bios/vgabios.bin",
+                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin",
                 },
-                // Graphical OS disk image (KolibriOS GUI used for demo)
                 fda: {
-                    url: "https://copy.sh/v86/images/kolibri.img",
+                    url: "https://cdn.jsdelivr.net/gh/copy/v86@master/images/kolibri.img",
                 },
                 autostart: true,
             });
