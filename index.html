@@ -5,8 +5,8 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load matching v86 runtime -->
-    <script src="https://cdn.jsdelivr.net/gh/copy/v86@master/build/libv86.js"></script>
+    <!-- Load local libv86.js from repository -->
+    <script src="libv86.js"></script>
 
     <style>
         * {
@@ -17,7 +17,7 @@
             margin: 0;
             padding: 0;
             width: 100vw;
-            height: 100vh;
+            min-height: 100vh;
             background-color: #111111;
             color: #ffffff;
             display: flex;
@@ -25,7 +25,6 @@
             justify-content: center;
             align-items: center;
             font-family: monospace;
-            overflow: auto;
             padding: 20px 0;
         }
 
@@ -34,7 +33,8 @@
             font-size: 13px;
             color: #00ff66;
             text-align: center;
-            max-width: 640px;
+            max-width: 648px;
+            width: 90%;
             word-break: break-all;
             padding: 8px;
             background: #1a1a1a;
@@ -64,9 +64,9 @@
             image-rendering: pixelated;
         }
 
-        /* Serial Console Terminal Output */
         #serial_container {
             width: 648px;
+            max-width: 90%;
             height: 200px;
             background-color: #000000;
             color: #00ff66;
@@ -85,12 +85,12 @@
 
     <div id="status_bar">Initializing emulator environment...</div>
 
-    <!-- VGA Screen -->
+    <!-- VGA Display -->
     <div id="screen_wrapper">
         <div id="screen_container"></div>
     </div>
 
-    <!-- Serial Terminal Output -->
+    <!-- Terminal / Serial Output -->
     <div id="serial_container"></div>
 
     <script>
@@ -101,34 +101,59 @@
             statusBar.textContent = msg;
         }
 
-        window.onerror = function(msg) {
-            logStatus("JS Error: " + msg, true);
-        };
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement("script");
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
 
-        window.onload = function() {
+        window.onload = async function() {
             var V86Class = window.V86Starter || window.V86;
+
+            // Fallback script loading if local libv86.js fails
             if (!V86Class) {
-                logStatus("Error: libv86.js failed to load.", true);
+                logStatus("Local libv86.js unavailable, attempting CDN fallback...");
+                try {
+                    await loadScript("https://unpkg.com/v86@latest/build/libv86.js");
+                    V86Class = window.V86Starter || window.V86;
+                } catch (e) {
+                    try {
+                        await loadScript("https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js");
+                        V86Class = window.V86Starter || window.V86;
+                    } catch (err) {}
+                }
+            }
+
+            if (!V86Class) {
+                logStatus("Error: libv86.js failed to load locally or from CDN. Disable adblockers or check network policies.", true);
                 return;
             }
 
-            logStatus("Booting Linux ISO...");
+            logStatus("Booting Linux ISO using local repository files...");
 
-            var emulator = window.emulator = new V86Class({
-                wasm_path: "https://cdn.jsdelivr.net/gh/copy/v86@master/build/v86.wasm",
-                memory_size: 512 * 1024 * 1024, // 512 MB RAM required for Linux kernel boot
-                vga_memory_size: 8 * 1024 * 1024,
-                screen_container: document.getElementById("screen_container"),
-                serial_container: document.getElementById("serial_container"),
-                bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin" },
-                vga_bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin" },
-                cdrom: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso" },
-                autostart: true
-            });
+            try {
+                var emulator = window.emulator = new V86Class({
+                    wasm_path: "v86.wasm",
+                    memory_size: 512 * 1024 * 1024,
+                    vga_memory_size: 8 * 1024 * 1024,
+                    screen_container: document.getElementById("screen_container"),
+                    serial_container: document.getElementById("serial_container"),
+                    bios: { url: "seabios.bin" },
+                    vga_bios: { url: "vgabios.bin" },
+                    cdrom: { url: "linux4.iso" },
+                    autostart: true
+                });
 
-            emulator.add_listener("emulator-ready", function() {
-                logStatus("Emulator active. Linux is booting into the terminal below...");
-            });
+                emulator.add_listener("emulator-ready", function() {
+                    logStatus("Emulator active. Booting Linux shell into terminal below...");
+                });
+            } catch (err) {
+                logStatus("Initialization Error: " + err.message, true);
+            }
         };
     </script>
 </body>
