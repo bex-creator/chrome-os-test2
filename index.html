@@ -5,8 +5,8 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load v86 runtime from jsDelivr -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
+    <!-- Load local libv86.js from repository -->
+    <script src="libv86.js"></script>
 
     <style>
         * {
@@ -53,23 +53,19 @@
         }
 
         #screen_container > div {
-            width: 100%;
-            height: 100%;
             white-space: pre;
             font-family: monospace;
             font-size: 14px;
             line-height: 14px;
             color: #ffffff;
             background-color: #000000;
-            overflow: hidden;
         }
 
-        #screen_container > canvas {
+        #screen_container canvas {
             width: 100% !important;
             height: 100% !important;
             object-fit: contain;
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
     </style>
 </head>
@@ -79,13 +75,13 @@
 
     <div id="screen_wrapper">
         <div id="screen_container">
-            <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
-            <canvas style="display: none"></canvas>
+            <div></div>
+            <canvas></canvas>
         </div>
     </div>
 
     <script>
-        window.onload = async function() {
+        window.onload = function() {
             var statusBar = document.getElementById("status_bar");
             var V86Class = window.V86Starter || window.V86;
 
@@ -95,49 +91,21 @@
                 return;
             }
 
-            function getAbsUrl(filename) {
-                return new URL(filename, location.href).href;
-            }
-
-            let isoUrl = getAbsUrl("linux4.iso");
-            statusBar.textContent = "Verifying linux4.iso...";
-
-            try {
-                const res = await fetch(isoUrl, { method: "HEAD" });
-                if (!res.ok) {
-                    statusBar.textContent = "Local linux4.iso not found, using CDN fallback...";
-                    isoUrl = "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso";
-                }
-            } catch (e) {
-                isoUrl = "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso";
-            }
-
-            statusBar.textContent = "Loading Linux ISO into memory...";
+            statusBar.textContent = "Loading Linux ISO and BIOS binaries...";
 
             var emulator = window.emulator = new V86Class({
-                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
+                wasm_path: "v86.wasm",
                 memory_size: 256 * 1024 * 1024,
                 vga_memory_size: 8 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
-                bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
-                vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
-                cdrom: { 
-                    url: isoUrl,
-                    async: false // Full download upfront; bypasses GitHub Range request stalls
-                },
+                bios: { url: "seabios.bin" },
+                vga_bios: { url: "vgabios.bin" },
+                cdrom: { url: "linux4.iso" },
                 autostart: true
             });
 
             emulator.add_listener("emulator-ready", function() {
                 statusBar.textContent = "Emulator active. Booting Linux...";
-            });
-
-            // Stream kernel boot output directly into the status bar
-            var serialText = "";
-            emulator.add_listener("serial0-output-char", function(char) {
-                serialText += char;
-                if (serialText.length > 150) serialText = serialText.slice(-150);
-                statusBar.textContent = "Booting... " + serialText.replace(/[\r\n]+/g, " ");
             });
         };
     </script>
