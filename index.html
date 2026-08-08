@@ -6,10 +6,14 @@
     <!-- Prevent 404 favicon warning -->
     <link rel="icon" href="data:,">
     
-    <!-- Load libv86 from jsDelivr CDN -->
-    <script src="https://cdn.jsdelivr.net/gh/copy/v86@master/build/libv86.js"></script>
+    <!-- Load libv86 from official NPM CDN release -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
             margin: 0;
             padding: 0;
@@ -24,7 +28,6 @@
             font-family: monospace;
         }
 
-        /* Screen container box */
         #screen_container {
             background-color: #000000;
             border: 2px solid #333333;
@@ -37,7 +40,6 @@
             overflow: hidden;
         }
 
-        /* Text Mode character layout */
         #screen_container > div {
             white-space: pre;
             font-family: monospace;
@@ -47,7 +49,6 @@
             background-color: #000000;
         }
 
-        /* VGA Graphics Mode canvas scaling */
         #screen_container > canvas {
             max-width: 100%;
             max-height: 100%;
@@ -58,7 +59,6 @@
 </head>
 <body>
 
-    <!-- Target container for v86 screen adapter -->
     <div id="screen_container">
         <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
         <canvas style="display: none"></canvas>
@@ -66,22 +66,21 @@
 
     <script>
         window.onload = function() {
-            var V86Class = window.V86 || window.V86Starter;
+            var V86Class = window.V86Starter || window.V86;
 
             if (!V86Class) {
-                console.error("libv86.js failed to load from CDN.");
+                console.error("libv86.js failed to initialize.");
                 return;
             }
 
             var emulator = window.emulator = new V86Class({
-                // Direct CDN URLs eliminate relative path 404 issues
-                wasm_path: "https://cdn.jsdelivr.net/gh/copy/v86@master/build/v86.wasm",
+                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
                 memory_size: 64 * 1024 * 1024,
                 vga_memory_size: 2 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
-                bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin" },
-                vga_bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin" },
-                cdrom: { url: "https://k.copy.sh/linux4.iso" },
+                bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
+                vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
+                cdrom: { url: "https://copy.sh/v86/images/linux4.iso" },
                 autostart: true
             });
         };
