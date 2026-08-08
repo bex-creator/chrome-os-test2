@@ -19,34 +19,65 @@
             margin: 0;
         }
 
-        h1 {
-            margin-bottom: 5px;
+        #header {
+            text-align: center;
+            margin-bottom: 15px;
         }
 
-        p {
-            color: #aaa;
-            margin-bottom: 20px;
+        h1 { margin-bottom: 5px; }
+        p { color: #aaa; margin-bottom: 10px; }
+
+        button {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
         }
 
+        button:hover { background-color: #555; }
+
+        /* The box that holds the screen */
         #screen_container {
             border: 3px solid #333;
             border-radius: 8px;
             box-shadow: 0px 8px 20px rgba(0,0,0,0.7);
             background-color: #000;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
+        /* How the container behaves when Fullscreen mode is active */
+        #screen_container:fullscreen {
+            border: none;
+            border-radius: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+        }
+
+        /* Scales the OS to fit the screen without stretching weirdly */
         canvas {
             display: block;
-            /* Hides the real cursor when hovering over the screen */
             cursor: none; 
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
         }
     </style>
 </head>
 <body>
 
-    <h1>WebAssembly Desktop OS</h1>
-    <p>Click inside the window to lock the mouse. Press <b>Esc</b> to release it.</p>
+    <div id="header">
+        <h1>WebAssembly Desktop OS</h1>
+        <p>Click inside the window to lock the mouse. Press <b>Esc</b> to release it.</p>
+        <button id="btn_fullscreen">Go Fullscreen</button>
+    </div>
 
     <div id="screen_container">
         <div style="white-space: pre; font-family: monospace;"></div>
@@ -58,7 +89,7 @@
             // Initialize the emulator using your local files
             var emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 512 * 1024 * 1024,     // Increased RAM to 512MB for ReactOS
+                memory_size: 512 * 1024 * 1024,     
                 vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
@@ -67,19 +98,31 @@
                 vga_bios: {
                     url: "vgabios.bin",
                 },
-                // Swapped from fda (floppy) to hda (hard drive) for ReactOS
                 hda: {
                     url: "reactos.img",
                 },
                 autostart: true,
             });
 
-            // Lock the mouse to the canvas when clicked to fix the double cursor
             var canvas = document.querySelector("canvas");
+            var container = document.getElementById("screen_container");
+            var btnFullscreen = document.getElementById("btn_fullscreen");
+
+            // Lock the mouse to the canvas when clicked to fix the double cursor
             canvas.addEventListener("click", async function() {
-                // Only request lock if it isn't already locked
                 if (document.pointerLockElement !== canvas) {
                     await canvas.requestPointerLock();
+                }
+            });
+
+            // Activate true fullscreen mode when the button is clicked
+            btnFullscreen.addEventListener("click", function() {
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().catch(err => {
+                        console.error("Error attempting to enable fullscreen mode:", err);
+                    });
+                } else {
+                    document.exitFullscreen();
                 }
             });
         };
