@@ -5,6 +5,7 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
+    <!-- Load v86 runtime from jsDelivr -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -29,9 +30,11 @@
 
         #status_bar {
             margin-bottom: 12px;
-            font-size: 14px;
+            font-size: 13px;
             color: #00ff66;
             text-align: center;
+            max-width: 640px;
+            word-break: break-all;
         }
 
         #screen_wrapper {
@@ -41,7 +44,6 @@
             padding: 4px;
         }
 
-        /* Fixed 640x400 dimensions prevent screen collapses during text/VGA mode switches */
         #screen_container {
             width: 640px;
             height: 400px;
@@ -50,7 +52,6 @@
             overflow: hidden;
         }
 
-        /* Text Mode element styling */
         #screen_container > div {
             width: 100%;
             height: 100%;
@@ -63,7 +64,6 @@
             overflow: hidden;
         }
 
-        /* VGA Graphics Canvas element styling */
         #screen_container > canvas {
             width: 100% !important;
             height: 100% !important;
@@ -99,37 +99,45 @@
                 return new URL(filename, location.href).href;
             }
 
-            const isoUrl = getAbsUrl("linux4.iso");
+            let isoUrl = getAbsUrl("linux4.iso");
+            statusBar.textContent = "Verifying linux4.iso...";
 
-            statusBar.textContent = "Checking for linux4.iso...";
             try {
-                const response = await fetch(isoUrl, { method: "HEAD" });
-                if (!response.ok) {
-                    statusBar.style.color = "#ff4444";
-                    statusBar.textContent = "Error: linux4.iso not found (404). Upload linux4.iso to repository root.";
-                    return;
+                const res = await fetch(isoUrl, { method: "HEAD" });
+                if (!res.ok) {
+                    statusBar.textContent = "Local linux4.iso not found, using CDN fallback...";
+                    isoUrl = "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso";
                 }
-            } catch (err) {
-                statusBar.style.color = "#ff4444";
-                statusBar.textContent = "Error checking linux4.iso location.";
-                return;
+            } catch (e) {
+                isoUrl = "https://cdn.jsdelivr.net/gh/copy/v86@master/images/linux4.iso";
             }
 
-            statusBar.textContent = "Booting SeaBIOS... (Kernel decompression takes ~20s)";
+            statusBar.textContent = "Loading Linux ISO into memory...";
 
             var emulator = window.emulator = new V86Class({
                 wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
-                memory_size: 512 * 1024 * 1024,
+                memory_size: 256 * 1024 * 1024,
                 vga_memory_size: 8 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
                 vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
-                cdrom: { url: isoUrl },
+                cdrom: { 
+                    url: isoUrl,
+                    async: false // Full download upfront; bypasses GitHub Range request stalls
+                },
                 autostart: true
             });
 
             emulator.add_listener("emulator-ready", function() {
-                statusBar.textContent = "Kernel Loading - Output will render shortly...";
+                statusBar.textContent = "Emulator active. Booting Linux...";
+            });
+
+            // Stream kernel boot output directly into the status bar
+            var serialText = "";
+            emulator.add_listener("serial0-output-char", function(char) {
+                serialText += char;
+                if (serialText.length > 150) serialText = serialText.slice(-150);
+                statusBar.textContent = "Booting... " + serialText.replace(/[\r\n]+/g, " ");
             });
         };
     </script>
