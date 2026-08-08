@@ -3,10 +3,9 @@
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-    <!-- Prevent 404 favicon warning -->
     <link rel="icon" href="data:,">
     
-    <!-- CDN with full CORS support for v86 runtime -->
+    <!-- Load v86 runtime from jsDelivr -->
     <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 
     <style>
@@ -22,21 +21,35 @@
             background-color: #111111;
             color: #ffffff;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             font-family: monospace;
+            overflow: hidden;
         }
 
-        #screen_container {
+        /* Status header */
+        #status_bar {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #00ff66;
+            text-align: center;
+        }
+
+        /* Screen Wrapper */
+        #screen_wrapper {
             background-color: #000000;
             border: 2px solid #333333;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            min-width: 640px;
-            min-height: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 4px;
+        }
+
+        /* v86 target container - Keep standard block layout for v86 internal scaling */
+        #screen_container {
+            width: 640px;
+            height: 400px;
+            background-color: #000000;
+            position: relative;
             overflow: hidden;
         }
 
@@ -50,8 +63,8 @@
         }
 
         #screen_container > canvas {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -59,23 +72,48 @@
 </head>
 <body>
 
-    <div id="screen_container">
-        <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
-        <canvas style="display: none"></canvas>
+    <div id="status_bar">Initializing emulator environment...</div>
+
+    <div id="screen_wrapper">
+        <div id="screen_container">
+            <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+            <canvas style="display: none"></canvas>
+        </div>
     </div>
 
     <script>
-        window.onload = function() {
+        window.onload = async function() {
+            var statusBar = document.getElementById("status_bar");
             var V86Class = window.V86Starter || window.V86;
 
             if (!V86Class) {
-                console.error("libv86.js failed to initialize.");
+                statusBar.style.color = "#ff4444";
+                statusBar.textContent = "Error: libv86.js failed to load from CDN.";
                 return;
             }
 
             function getAbsUrl(filename) {
                 return new URL(filename, location.href).href;
             }
+
+            const isoUrl = getAbsUrl("linux4.iso");
+
+            // Verify linux4.iso actually exists on GitHub Pages before booting
+            statusBar.textContent = "Checking for linux4.iso...";
+            try {
+                const response = await fetch(isoUrl, { method: "HEAD" });
+                if (!response.ok) {
+                    statusBar.style.color = "#ff4444";
+                    statusBar.textContent = "Error: linux4.iso not found (404). Upload linux4.iso to your GitHub repo root.";
+                    return;
+                }
+            } catch (err) {
+                statusBar.style.color = "#ff4444";
+                statusBar.textContent = "Error verifying linux4.iso location.";
+                return;
+            }
+
+            statusBar.textContent = "Loading WebAssembly CPU & Linux ISO...";
 
             var emulator = window.emulator = new V86Class({
                 wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
@@ -84,9 +122,12 @@
                 screen_container: document.getElementById("screen_container"),
                 bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/seabios.bin" },
                 vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@latest/bios/vgabios.bin" },
-                // Same-origin path to avoid CORS block
-                cdrom: { url: getAbsUrl("linux4.iso") },
+                cdrom: { url: isoUrl },
                 autostart: true
+            });
+
+            emulator.add_listener("emulator-ready", function() {
+                statusBar.textContent = "Emulator Running - Booting Linux...";
             });
         };
     </script>
