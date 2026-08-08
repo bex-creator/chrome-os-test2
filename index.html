@@ -5,7 +5,7 @@
     <title>Web Linux</title>
     <link rel="icon" href="data:,">
     
-    <!-- Load local libv86.js from repository -->
+    <!-- v86 Runtime -->
     <script src="libv86.js"></script>
 
     <style>
@@ -64,95 +64,93 @@
             image-rendering: pixelated;
         }
 
-        #serial_container {
+        #terminal_output {
             width: 648px;
             max-width: 90%;
-            height: 200px;
+            height: 220px;
             background-color: #000000;
             color: #00ff66;
             font-family: monospace;
-            font-size: 12px;
+            font-size: 13px;
+            line-height: 16px;
             white-space: pre-wrap;
             word-break: break-all;
             overflow-y: auto;
             border: 2px solid #333333;
-            padding: 8px;
+            padding: 10px;
             margin-top: 12px;
         }
     </style>
 </head>
 <body>
 
-    <div id="status_bar">Initializing emulator environment...</div>
+    <div id="status_bar">Initializing environment...</div>
 
-    <!-- VGA Display -->
+    <!-- Graphical Screen Container -->
     <div id="screen_wrapper">
         <div id="screen_container"></div>
     </div>
 
-    <!-- Terminal / Serial Output -->
-    <div id="serial_container"></div>
+    <!-- Serial Console Output Terminal -->
+    <div id="terminal_output"></div>
 
     <script>
         const statusBar = document.getElementById("status_bar");
+        const terminal = document.getElementById("terminal_output");
 
         function logStatus(msg, isError = false) {
             statusBar.style.color = isError ? "#ff4444" : "#00ff66";
             statusBar.textContent = msg;
         }
 
-        function loadScript(src) {
-            return new Promise((resolve, reject) => {
-                const s = document.createElement("script");
-                s.src = src;
-                s.onload = resolve;
-                s.onerror = reject;
-                document.head.appendChild(s);
-            });
+        // Fetch binary files directly into memory buffers to avoid HTTP Range Request stalls
+        async function loadBinary(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to load " + url + " (HTTP " + res.status + ")");
+            return await res.arrayBuffer();
         }
 
         window.onload = async function() {
             var V86Class = window.V86Starter || window.V86;
-
-            // Fallback script loading if local libv86.js fails
             if (!V86Class) {
-                logStatus("Local libv86.js unavailable, attempting CDN fallback...");
-                try {
-                    await loadScript("https://unpkg.com/v86@latest/build/libv86.js");
-                    V86Class = window.V86Starter || window.V86;
-                } catch (e) {
-                    try {
-                        await loadScript("https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js");
-                        V86Class = window.V86Starter || window.V86;
-                    } catch (err) {}
-                }
-            }
-
-            if (!V86Class) {
-                logStatus("Error: libv86.js failed to load locally or from CDN. Disable adblockers or check network policies.", true);
+                logStatus("Error: libv86.js failed to load.", true);
                 return;
             }
 
-            logStatus("Booting Linux ISO using local repository files...");
-
             try {
+                logStatus("Downloading BIOS and Linux ISO into RAM...");
+                
+                const [biosBuf, vgaBiosBuf, isoBuf] = await Promise.all([
+                    loadBinary("seabios.bin"),
+                    loadBinary("vgabios.bin"),
+                    loadBinary("linux4.iso")
+                ]);
+
+                logStatus("Launching WASM Virtual Machine...");
+
                 var emulator = window.emulator = new V86Class({
                     wasm_path: "v86.wasm",
-                    memory_size: 512 * 1024 * 1024,
+                    memory_size: 128 * 1024 * 1024,
                     vga_memory_size: 8 * 1024 * 1024,
                     screen_container: document.getElementById("screen_container"),
-                    serial_container: document.getElementById("serial_container"),
-                    bios: { url: "seabios.bin" },
-                    vga_bios: { url: "vgabios.bin" },
-                    cdrom: { url: "linux4.iso" },
+                    bios: { buffer: biosBuf },
+                    vga_bios: { buffer: vgaBiosBuf },
+                    cdrom: { buffer: isoBuf },
                     autostart: true
                 });
 
                 emulator.add_listener("emulator-ready", function() {
-                    logStatus("Emulator active. Booting Linux shell into terminal below...");
+                    logStatus("VM Active. Linux Kernel Booting...");
                 });
+
+                // Capture character stream directly from serial ttyS0
+                emulator.add_listener("serial0-output-char", function(char) {
+                    terminal.textContent += char;
+                    terminal.scrollTop = terminal.scrollHeight;
+                });
+
             } catch (err) {
-                logStatus("Initialization Error: " + err.message, true);
+                logStatus("Boot Failure: " + err.message, true);
             }
         };
     </script>
