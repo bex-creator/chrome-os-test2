@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-    <script src="libv86.js"></script>
+    <!-- Loads libv86 script from CDN to define V86Starter globally -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
 </head>
 <body style="height: 100%; margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden;">
 
@@ -15,7 +16,7 @@
     <script>
         window.onload = function() {
             var emulator = new V86Starter({
-                wasm_path: "v86.wasm",
+                wasm_path: "https://cdn.jsdelivr.net/npm/v86@latest/build/v86.wasm",
                 memory_size: 64 * 1024 * 1024,
                 vga_memory_size: 2 * 1024 * 1024,
                 screen_container: document.getElementById("screen_container"),
