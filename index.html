@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebAssembly Desktop OS</title>
-    <!-- Load the local script you uploaded -->
     <script src="libv86.js"></script>
     <style>
         body {
@@ -40,7 +39,6 @@
 
         button:hover { background-color: #555; }
 
-        /* The box that holds the screen */
         #screen_container {
             border: 3px solid #333;
             border-radius: 8px;
@@ -52,7 +50,6 @@
             justify-content: center;
         }
 
-        /* How the container behaves when Fullscreen mode is active */
         #screen_container:fullscreen {
             border: none;
             border-radius: 0;
@@ -61,7 +58,6 @@
             background-color: #000;
         }
 
-        /* Scales the OS to fit the screen without stretching weirdly */
         canvas {
             display: block;
             cursor: none; 
@@ -86,10 +82,9 @@
 
     <script>
         window.onload = function() {
-            // Initialize the emulator using your local files
             var emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 512 * 1024 * 1024,     
+                memory_size: 128 * 1024 * 1024,     
                 vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
@@ -98,8 +93,9 @@
                 vga_bios: {
                     url: "vgabios.bin",
                 },
-                hda: {
-                    url: "reactos.img",
+                // Swapped back to your working KolibriOS image
+                fda: {
+                    url: "kolibri.img",
                 },
                 autostart: true,
             });
@@ -108,14 +104,12 @@
             var container = document.getElementById("screen_container");
             var btnFullscreen = document.getElementById("btn_fullscreen");
 
-            // Lock the mouse to the canvas when clicked to fix the double cursor
             canvas.addEventListener("click", async function() {
                 if (document.pointerLockElement !== canvas) {
                     await canvas.requestPointerLock();
                 }
             });
 
-            // Activate true fullscreen mode when the button is clicked
             btnFullscreen.addEventListener("click", function() {
                 if (!document.fullscreenElement) {
                     container.requestFullscreen().catch(err => {
