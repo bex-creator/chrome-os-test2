@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html style="height: 100%; margin: 0; background: #000;">
+<html>
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
+
+    <!-- Suppresses the 404 favicon console error -->
+    <link rel="icon" href="data:,">
+
     <script src="libv86.js"></script>
+
     <style>
         html, body {
             width: 100%;
@@ -13,14 +18,18 @@
             background-color: #000000;
             color: #ffffff;
             overflow: hidden;
+            font-family: monospace;
         }
 
+        /* Enforce full-screen container dimensions */
         #screen_container {
             width: 100vw;
             height: 100vh;
+            background-color: #000000;
+            display: block;
         }
 
-        /* Styling for v86 text terminal mode */
+        /* Text-mode terminal output */
         #screen_container div {
             white-space: pre;
             font-family: monospace;
@@ -30,7 +39,7 @@
             background-color: #000000;
         }
 
-        /* Forces v86 VGA graphical canvas to unhide and fill window */
+        /* Graphical VGA mode output */
         #screen_container canvas {
             display: block !important;
             width: 100% !important;
@@ -41,18 +50,22 @@
 </head>
 <body>
 
-    <!-- v86 automatically populates this container -->
-    <div id="screen_container"></div>
+    <!-- Target container for v86 screen adapter -->
+    <div id="screen_container">
+        <div style="white-space: pre; font-family: monospace;"></div>
+        <canvas></canvas>
+    </div>
 
     <script>
         window.onload = function() {
             var V86Class = window.V86 || window.V86Starter;
 
             if (!V86Class) {
-                alert("libv86.js failed to load.");
+                console.error("libv86.js failed to load.");
                 return;
             }
 
+            // Generate absolute URLs for worker thread compatibility
             function getAbsUrl(filename) {
                 return new URL(filename, location.href).href;
             }
