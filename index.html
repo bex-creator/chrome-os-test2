@@ -1,81 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html style="height: 100%; margin: 0; background: #000;">
 <head>
     <meta charset="utf-8">
     <title>Web Linux</title>
-    <!-- Load v86 directly from jsDelivr CDN to guarantee library integrity -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js"></script>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000000;
-            color: #ffffff;
-            overflow: hidden;
-            font-family: monospace;
-        }
-        #screen_container {
-            width: 100vw;
-            height: 100vh;
-        }
-        #screen_container div {
-            white-space: pre;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 14px;
-            color: #ffffff;
-            background-color: #000000;
-        }
-        #screen_container canvas {
-            display: none;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        #debug_out {
-            color: #ff5555;
-            padding: 20px;
-            white-space: pre-wrap;
-        }
-    </style>
+    <script src="libv86.js"></script>
 </head>
-<body>
+<body style="height: 100%; margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden;">
 
-    <div id="debug_out"></div>
-
-    <!-- Exact DOM structure required by v86 screen adapter:
-         Child 0: <div> (Text mode)
-         Child 1: <canvas> (VGA mode) -->
-    <div id="screen_container">
-        <div></div>
-        <canvas></canvas>
+    <!-- v86 screen container -->
+    <div id="screen_container" style="width: 100vw; height: 100vh;">
+        <div style="white-space: pre; font-family: monospace; color: #fff; background: #000;"></div>
+        <canvas style="display: none;"></canvas>
     </div>
 
     <script>
-        window.addEventListener("DOMContentLoaded", function() {
-            try {
-                var V86Constructor = window.V86 || window.V86Starter;
+        window.onload = function() {
+            var V86Class = window.V86 || window.V86Starter;
 
-                if (!V86Constructor) {
-                    throw new Error("V86 constructor class not found.");
-                }
-
-                var emulator = window.emulator = new V86Constructor({
-                    wasm_path: "v86.wasm",
-                    memory_size: 64 * 1024 * 1024,
-                    vga_memory_size: 2 * 1024 * 1024,
-                    screen_container: document.getElementById("screen_container"),
-                    bios: { url: "seabios.bin" },
-                    vga_bios: { url: "vgabios.bin" },
-                    cdrom: { url: "linux4.iso" },
-                    autostart: true
-                });
-            } catch (err) {
-                document.getElementById("debug_out").innerText = "Execution Error: " + err.stack;
+            if (!V86Class) {
+                alert("libv86.js failed to load.");
+                return;
             }
-        });
+
+            // Convert relative filenames into full https:// URLs so the Blob Worker can find them
+            function getAbsUrl(filename) {
+                return new URL(filename, location.href).href;
+            }
+
+            var emulator = window.emulator = new V86Class({
+                wasm_path: getAbsUrl("v86.wasm"),
+                memory_size: 64 * 1024 * 1024,
+                vga_memory_size: 2 * 1024 * 1024,
+                screen_container: document.getElementById("screen_container"),
+                bios: { url: getAbsUrl("seabios.bin") },
+                vga_bios: { url: getAbsUrl("vgabios.bin") },
+                cdrom: { url: getAbsUrl("linux4.iso") },
+                autostart: true
+            });
+        };
     </script>
 </body>
 </html>
