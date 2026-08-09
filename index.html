@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Console Terminal</title>
+    <title>Retro Arcade Terminal</title>
     <style>
         body {
             background-color: #0a0a0a;
@@ -27,45 +27,6 @@
         h1 { margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
         p { color: #00b38f; margin-bottom: 15px; font-size: 14px; }
 
-        #setup_panel {
-            background-color: #121212;
-            border: 1px solid #00ffcc;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
-            text-align: center;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-        }
-
-        select, input[type="file"], button {
-            background-color: #002b22;
-            color: #00ffcc;
-            border: 1px solid #00ffcc;
-            padding: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            cursor: pointer;
-            outline: none;
-        }
-
-        button {
-            text-transform: uppercase;
-            font-weight: bold;
-            box-shadow: 0 0 10px #00ffcc44;
-            transition: all 0.2s;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 20px #00ffcc;
-        }
-
         /* Stylized CRT Monitor */
         #screen_container {
             position: relative;
@@ -78,7 +39,6 @@
             box-shadow: 0px 10px 30px rgba(0, 255, 204, 0.2), inset 0px 0px 20px rgba(0,0,0,1);
             background-color: #000;
             overflow: hidden;
-            display: none;
         }
 
         #game_window {
@@ -97,43 +57,13 @@
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
         }
-
-        #screen_container:fullscreen {
-            border: none;
-            border-radius: 0;
-            width: 100vw;
-            height: 100vh;
-            max-width: 100vw;
-            max-height: 100vh;
-        }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <h1>Console Emulation Terminal</h1>
-        <p>Select your system core, load a local ROM file, and initialize hardware.</p>
-    </div>
-
-    <div id="setup_panel">
-        <div>
-            <label for="system_select">Console Core: </label>
-            <select id="system_select">
-                <option value="nes">Nintendo Entertainment System (NES)</option>
-                <option value="snes">Super Nintendo (SNES)</option>
-                <option value="gb">Game Boy / Game Boy Color</option>
-                <option value="gba">Game Boy Advance (GBA)</option>
-                <option value="segaMD">Sega Genesis / Mega Drive</option>
-                <option value="n64">Nintendo 64 (N64)</option>
-                <option value="psx">PlayStation 1 (PSX)</option>
-            </select>
-        </div>
-
-        <div>
-            <input type="file" id="rom_file">
-        </div>
-
-        <button id="btn_launch">Initialize Core</button>
+        <h1>Arcade Terminal // Booting</h1>
+        <p>Game loading automatically from server...</p>
     </div>
 
     <div id="screen_container">
@@ -141,34 +71,16 @@
     </div>
 
     <script>
-        document.getElementById("btn_launch").addEventListener("click", function() {
-            var fileInput = document.getElementById("rom_file");
-            var coreSelect = document.getElementById("system_select");
+        // 1. Set the console core ('gba', 'snes', 'nes', 'gb', 'segaMD', 'n64')
+        window.EJS_core = "gba"; 
 
-            if (fileInput.files.length === 0) {
-                alert("Please select a game ROM file from your computer!");
-                return;
-            }
+        // 2. Set the exact filename of the game file you uploaded to GitHub
+        window.EJS_gameUrl = "game.gba"; 
 
-            var romFile = fileInput.files[0];
-            var romUrl = URL.createObjectURL(romFile);
-            var selectedCore = coreSelect.value;
-
-            // Hide the setup menu and reveal the CRT display
-            document.getElementById("setup_panel").style.display = "none";
-            document.getElementById("screen_container").style.display = "block";
-
-            // Configure EmulatorJS parameters
-            window.EJS_player = "#game_window";
-            window.EJS_core = selectedCore;
-            window.EJS_gameUrl = romUrl;
-            window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-
-            // Inject the WebAssembly loader script
-            var loader = document.createElement("script");
-            loader.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
-            document.body.appendChild(loader);
-        });
+        window.EJS_player = "#game_window";
+        window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
     </script>
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+
 </body>
 </html>
