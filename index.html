@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAssembly Desktop OS</title>
-    <script src="libv86.js"></script>
+    <title>Retro Arcade Terminal</title>
     <style>
         body {
             background-color: #0a0a0a;
@@ -25,122 +24,55 @@
             text-shadow: 0 0 10px #00ffcc;
         }
 
-        h1 { margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;}
-        p { color: #00b38f; margin-bottom: 15px; font-size: 14px;}
-
-        button {
-            background-color: #003329;
-            color: #00ffcc;
-            border: 1px solid #00ffcc;
-            padding: 10px 20px;
-            border-radius: 0px;
-            cursor: pointer;
-            font-size: 14px;
-            text-transform: uppercase;
-            font-weight: bold;
-            box-shadow: 0 0 10px #00ffcc44;
-            transition: all 0.2s;
-        }
-
-        button:hover { 
-            background-color: #00ffcc; 
-            color: #000;
-            box-shadow: 0 0 20px #00ffcc;
-        }
-
-        /* The stylized Retro Monitor Bezel */
+        /* The retro CRT monitor box */
         #screen_container {
             position: relative;
+            width: 640px;
+            height: 480px;
             border: 15px solid #222;
             border-radius: 15px;
             box-shadow: 0px 10px 30px rgba(0, 255, 204, 0.2), inset 0px 0px 20px rgba(0,0,0,1);
             background-color: #000;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        /* Adds a subtle curve and glow to the screen */
-        canvas {
-            display: block;
-            cursor: none; 
+        #game_window {
             width: 100%;
             height: 100%;
-            object-fit: contain; 
-            filter: contrast(1.1) brightness(1.1) drop-shadow(0 0 5px rgba(255,255,255,0.2));
         }
 
-        /* CSS trick to add horizontal CRT scanlines over the screen */
+        /* Scanlines overlay */
         #screen_container::after {
             content: " ";
             display: block;
             position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
+            top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             z-index: 2;
             background-size: 100% 2px, 3px 100%;
-            pointer-events: none; /* Lets you click through the scanlines */
-        }
-
-        #screen_container:fullscreen {
-            border: none;
-            border-radius: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <h1>Virtual Machine // Active</h1>
-        <p>Click screen to engage mouse lock. Press <b>ESC</b> to release.</p>
-        <button id="btn_fullscreen">Initialize Fullscreen</button>
+        <h1>Arcade System // Ready</h1>
+        <p>Select a ROM file or host a game file in your repository.</p>
     </div>
 
     <div id="screen_container">
-        <div style="white-space: pre; font-family: monospace;"></div>
-        <canvas></canvas>
+        <div id="game_window"></div>
     </div>
 
     <script>
-        window.onload = function() {
-            var emulator = new window.V86({
-                wasm_path: "v86.wasm",
-                memory_size: 128 * 1024 * 1024,     
-                vga_memory_size: 8 * 1024 * 1024,   
-                screen_container: document.getElementById("screen_container"),
-                bios: { url: "seabios.bin" },
-                vga_bios: { url: "vgabios.bin" },
-                fda: { url: "kolibri.img" },
-                autostart: true,
-            });
-
-            var canvas = document.querySelector("canvas");
-            var container = document.getElementById("screen_container");
-            var btnFullscreen = document.getElementById("btn_fullscreen");
-
-            canvas.addEventListener("click", async function() {
-                if (document.pointerLockElement !== canvas) {
-                    await canvas.requestPointerLock();
-                }
-            });
-
-            btnFullscreen.addEventListener("click", function() {
-                if (!document.fullscreenElement) {
-                    container.requestFullscreen().catch(err => {
-                        console.error("Error attempting to enable fullscreen mode:", err);
-                    });
-                } else {
-                    document.exitFullscreen();
-                }
-            });
-        };
+        // Set your target system (e.g., 'snes', 'gba', 'nes', 'segaMD', 'n64')
+        EJS_player = "#game_window";
+        EJS_core = "snes"; 
+        EJS_gameUrl = "your_game_rom.sfc"; // Path to your game ROM file
+        EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
     </script>
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+
 </body>
 </html>
