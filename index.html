@@ -26,7 +26,7 @@
         h1 { margin-bottom: 5px; }
         p { color: #aaa; margin-bottom: 10px; }
 
-        button {
+        .btn {
             background-color: #333;
             color: white;
             border: 1px solid #555;
@@ -35,9 +35,25 @@
             cursor: pointer;
             font-size: 14px;
             transition: background-color 0.2s;
+            margin: 5px;
         }
 
-        button:hover { background-color: #555; }
+        .btn:hover { background-color: #555; }
+
+        /* The setup menu where you pick the file */
+        #setup_menu {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+            color: #fff;
+        }
 
         #screen_container {
             border: 3px solid #333;
@@ -45,9 +61,10 @@
             box-shadow: 0px 8px 20px rgba(0,0,0,0.7);
             background-color: #000;
             overflow: hidden;
-            display: flex;
+            display: none; /* Hidden until you pick a file */
             align-items: center;
             justify-content: center;
+            flex-direction: column;
         }
 
         #screen_container:fullscreen {
@@ -72,7 +89,16 @@
     <div id="header">
         <h1>WebAssembly Desktop OS</h1>
         <p>Click inside the window to lock the mouse. Press <b>Esc</b> to release it.</p>
-        <button id="btn_fullscreen">Go Fullscreen</button>
+        <button class="btn" id="btn_fullscreen" style="display:none;">Go Fullscreen</button>
+    </div>
+
+    <!-- The new menu to select your heavy OS file from your PC -->
+    <div id="setup_menu">
+        <h2>Boot a Modern OS</h2>
+        <p>Select an .iso file from your computer to run it locally.</p>
+        <input type="file" id="os_file" accept=".iso,.img">
+        <br>
+        <button class="btn" id="btn_start">Boot Emulator</button>
     </div>
 
     <div id="screen_container">
@@ -81,11 +107,31 @@
     </div>
 
     <script>
-        window.onload = function() {
-            var emulator = new window.V86({
+        var emulator = null;
+
+        document.getElementById("btn_start").addEventListener("click", function() {
+            var fileInput = document.getElementById("os_file");
+            
+            if (fileInput.files.length === 0) {
+                alert("Please click 'Choose File' and select an OS image first!");
+                return;
+            }
+
+            var file = fileInput.files[0];
+            
+            // Create a secure local URL so the emulator can read the file directly off your hard drive
+            var fileUrl = URL.createObjectURL(file);
+
+            // Hide the setup menu, show the screen and fullscreen button
+            document.getElementById("setup_menu").style.display = "none";
+            document.getElementById("screen_container").style.display = "flex";
+            document.getElementById("btn_fullscreen").style.display = "inline-block";
+
+            // Initialize the emulator with 1GB of RAM and the local file
+            emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 512 * 1024 * 1024,     
-                vga_memory_size: 8 * 1024 * 1024,   
+                memory_size: 1024 * 1024 * 1024, // 1GB of RAM for modern systems  
+                vga_memory_size: 32 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
                     url: "seabios.bin",
@@ -93,33 +139,34 @@
                 vga_bios: {
                     url: "vgabios.bin",
                 },
-                // Booting the new Linux CD-ROM!
                 cdrom: {
-                    url: "linux3.iso",
+                    url: fileUrl,
+                    async: true,
                 },
                 autostart: true,
             });
 
             var canvas = document.querySelector("canvas");
-            var container = document.getElementById("screen_container");
-            var btnFullscreen = document.getElementById("btn_fullscreen");
-
             canvas.addEventListener("click", async function() {
                 if (document.pointerLockElement !== canvas) {
                     await canvas.requestPointerLock();
                 }
             });
+        });
 
-            btnFullscreen.addEventListener("click", function() {
-                if (!document.fullscreenElement) {
-                    container.requestFullscreen().catch(err => {
-                        console.error("Error attempting to enable fullscreen mode:", err);
-                    });
-                } else {
-                    document.exitFullscreen();
-                }
-            });
-        };
+        // Fullscreen logic
+        var btnFullscreen = document.getElementById("btn_fullscreen");
+        var container = document.getElementById("screen_container");
+
+        btnFullscreen.addEventListener("click", function() {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.error("Error attempting to enable fullscreen mode:", err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
     </script>
 </body>
 </html>
