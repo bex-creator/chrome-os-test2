@@ -7,64 +7,83 @@
     <script src="libv86.js"></script>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
+            background-color: #0a0a0a;
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            background-image: radial-gradient(circle, #1a1a1a 0%, #000000 100%);
         }
 
         #header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ffcc;
         }
 
-        h1 { margin-bottom: 5px; }
-        p { color: #aaa; margin-bottom: 10px; }
+        h1 { margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;}
+        p { color: #00b38f; margin-bottom: 15px; font-size: 14px;}
 
-        .btn {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 8px 16px;
-            border-radius: 4px;
+        button {
+            background-color: #003329;
+            color: #00ffcc;
+            border: 1px solid #00ffcc;
+            padding: 10px 20px;
+            border-radius: 0px;
             cursor: pointer;
             font-size: 14px;
-            transition: background-color 0.2s;
-            margin: 5px;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 0 10px #00ffcc44;
+            transition: all 0.2s;
         }
 
-        .btn:hover { background-color: #555; }
-
-        /* The setup menu where you pick the file */
-        #setup_menu {
-            background-color: #1e1e1e;
-            padding: 30px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            text-align: center;
-            margin-bottom: 20px;
+        button:hover { 
+            background-color: #00ffcc; 
+            color: #000;
+            box-shadow: 0 0 20px #00ffcc;
         }
 
-        input[type="file"] {
-            margin: 15px 0;
-            color: #fff;
-        }
-
+        /* The stylized Retro Monitor Bezel */
         #screen_container {
-            border: 3px solid #333;
-            border-radius: 8px;
-            box-shadow: 0px 8px 20px rgba(0,0,0,0.7);
+            position: relative;
+            border: 15px solid #222;
+            border-radius: 15px;
+            box-shadow: 0px 10px 30px rgba(0, 255, 204, 0.2), inset 0px 0px 20px rgba(0,0,0,1);
             background-color: #000;
             overflow: hidden;
-            display: none; /* Hidden until you pick a file */
+            display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
+        }
+
+        /* Adds a subtle curve and glow to the screen */
+        canvas {
+            display: block;
+            cursor: none; 
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            filter: contrast(1.1) brightness(1.1) drop-shadow(0 0 5px rgba(255,255,255,0.2));
+        }
+
+        /* CSS trick to add horizontal CRT scanlines over the screen */
+        #screen_container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; /* Lets you click through the scanlines */
         }
 
         #screen_container:fullscreen {
@@ -74,31 +93,14 @@
             height: 100vh;
             background-color: #000;
         }
-
-        canvas {
-            display: block;
-            cursor: none; 
-            width: 100%;
-            height: 100%;
-            object-fit: contain; 
-        }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <h1>WebAssembly Desktop OS</h1>
-        <p>Click inside the window to lock the mouse. Press <b>Esc</b> to release it.</p>
-        <button class="btn" id="btn_fullscreen" style="display:none;">Go Fullscreen</button>
-    </div>
-
-    <!-- The new menu to select your heavy OS file from your PC -->
-    <div id="setup_menu">
-        <h2>Boot a Modern OS</h2>
-        <p>Select an .iso file from your computer to run it locally.</p>
-        <input type="file" id="os_file" accept=".iso,.img">
-        <br>
-        <button class="btn" id="btn_start">Boot Emulator</button>
+        <h1>Virtual Machine // Active</h1>
+        <p>Click screen to engage mouse lock. Press <b>ESC</b> to release.</p>
+        <button id="btn_fullscreen">Initialize Fullscreen</button>
     </div>
 
     <div id="screen_container">
@@ -107,66 +109,38 @@
     </div>
 
     <script>
-        var emulator = null;
-
-        document.getElementById("btn_start").addEventListener("click", function() {
-            var fileInput = document.getElementById("os_file");
-            
-            if (fileInput.files.length === 0) {
-                alert("Please click 'Choose File' and select an OS image first!");
-                return;
-            }
-
-            var file = fileInput.files[0];
-            
-            // Create a secure local URL so the emulator can read the file directly off your hard drive
-            var fileUrl = URL.createObjectURL(file);
-
-            // Hide the setup menu, show the screen and fullscreen button
-            document.getElementById("setup_menu").style.display = "none";
-            document.getElementById("screen_container").style.display = "flex";
-            document.getElementById("btn_fullscreen").style.display = "inline-block";
-
-            // Initialize the emulator with 1GB of RAM and the local file
-            emulator = new window.V86({
+        window.onload = function() {
+            var emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 1024 * 1024 * 1024, // 1GB of RAM for modern systems  
-                vga_memory_size: 32 * 1024 * 1024,   
+                memory_size: 128 * 1024 * 1024,     
+                vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
-                bios: {
-                    url: "seabios.bin",
-                },
-                vga_bios: {
-                    url: "vgabios.bin",
-                },
-                cdrom: {
-                    url: fileUrl,
-                    async: true,
-                },
+                bios: { url: "seabios.bin" },
+                vga_bios: { url: "vgabios.bin" },
+                fda: { url: "kolibri.img" },
                 autostart: true,
             });
 
             var canvas = document.querySelector("canvas");
+            var container = document.getElementById("screen_container");
+            var btnFullscreen = document.getElementById("btn_fullscreen");
+
             canvas.addEventListener("click", async function() {
                 if (document.pointerLockElement !== canvas) {
                     await canvas.requestPointerLock();
                 }
             });
-        });
 
-        // Fullscreen logic
-        var btnFullscreen = document.getElementById("btn_fullscreen");
-        var container = document.getElementById("screen_container");
-
-        btnFullscreen.addEventListener("click", function() {
-            if (!document.fullscreenElement) {
-                container.requestFullscreen().catch(err => {
-                    console.error("Error attempting to enable fullscreen mode:", err);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-        });
+            btnFullscreen.addEventListener("click", function() {
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().catch(err => {
+                        console.error("Error attempting to enable fullscreen mode:", err);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+        };
     </script>
 </body>
 </html>
