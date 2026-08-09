@@ -84,7 +84,7 @@
         window.onload = function() {
             var emulator = new window.V86({
                 wasm_path: "v86.wasm",
-                memory_size: 128 * 1024 * 1024,     
+                memory_size: 512 * 1024 * 1024,     
                 vga_memory_size: 8 * 1024 * 1024,   
                 screen_container: document.getElementById("screen_container"),
                 bios: {
@@ -93,9 +93,9 @@
                 vga_bios: {
                     url: "vgabios.bin",
                 },
-                // Swapped back to your working KolibriOS image
-                fda: {
-                    url: "kolibri.img",
+                // Booting the new Linux CD-ROM!
+                cdrom: {
+                    url: "linux3.iso",
                 },
                 autostart: true,
             });
